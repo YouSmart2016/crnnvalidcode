@@ -4,51 +4,6 @@ import re
 import tensorflow as tf
 
 
-class UnsupportedFormatError(Exception):
-    """Error class for unsupported format"""
-
-
-def preprocessPath(dirname,image_path):
-    return dirname+"/"+image_path[2:]
-
-
-def read_annotation(path):
-    """Read an annotation file to get image paths and labels."""
-    print(f'Annotation path: {path}, format: ', end='')
-    with open(path) as f:
-        line = f.readline().strip()
-        if re.fullmatch(r'.*/*\d+_.+_(\d+)\.\w+ \1', line):
-            print('MJSynth')
-            content = [l.strip().split() for l in f.readlines() + [line]]
-            img_paths, labels = zip(*content)
-            labels = [path.split('_')[1] for path in img_paths]
-        elif re.fullmatch(r'.*/*word_\d\.\w+, ".+"', line):
-            print('ICDAR2013')
-            content = [l.strip().split(',') for l in f.readlines() + [line]]
-            img_paths, labels = zip(*content)
-            labels = [label.strip(' "') for label in labels]
-        elif re.fullmatch(r'.+\.\w+ .+', line):
-            print('[image path] label')
-            content = [l.strip().split() for l in f.readlines() + [line]]
-            img_paths, labels = zip(*content)
-        else:
-            raise UnsupportedFormatError('Unsupported annotation format')
-    dirname = os.path.dirname(path)
-    img_paths = [preprocessPath(dirname,img_path) for img_path in img_paths]
-    return img_paths, labels
-
-
-def read_annotations(paths):
-    """Read annotation files to get image paths and labels."""
-    img_paths = []
-    labels = []
-    for path in paths:
-        part_img_paths, part_labels = read_annotation(path)
-        img_paths.extend(part_img_paths)
-        labels.extend(part_labels)
-    return img_paths, labels
-
-
 class DatasetBuilder():
     def __init__(self, table_path, img_width, img_channels, ignore_case=False):
         self.table = tf.lookup.StaticHashTable(tf.lookup.TextFileInitializer(
@@ -115,11 +70,10 @@ class Decoder:
             text = [self.table[char_index] for char_index in i 
                     if char_index != self.blank_index]
             strings.append(''.join(text))
-        #['paintbrushes', 'reimbursing', 'creationisms']
         return strings
 
     def decode(self, inputs, from_pred=True, method='greedy'):
-        #inputs=(3,24,37)
+        #inputs=(3,24,11)
         if from_pred:
             #[24,24,24]=[3]*24=[24,24,24]
             logit_length = tf.fill([tf.shape(inputs)[0]], tf.shape(inputs)[1])

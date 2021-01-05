@@ -2,9 +2,9 @@
 import os
 import tensorflow as tf
 
-from crnnvalidcode.model import build_model
+from model import build_model
 
-from crnnvalidcode.dataset import Decoder
+from dataset import Decoder
 import  random
 
 import matplotlib.pyplot  as plt
